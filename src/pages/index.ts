@@ -1,0 +1,8 @@
+export { default as CandidateDetailsPage } from './CandidateDetailsPage'
+export { default as CandidatesPage } from './CandidatesPage'
+export { default as DashboardPage } from './DashboardPage'
+export { default as LoginPage } from './LoginPage'
+export { default as NotFoundPage } from './NotFoundPage'
+export { default as RecruitersPage } from './RecruitersPage'
+export { default as SettingsPage } from './SettingsPage'
+export { default as StatisticsPage } from './StatisticsPage'
