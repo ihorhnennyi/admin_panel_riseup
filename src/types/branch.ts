@@ -3,12 +3,7 @@ export interface Branch {
 	name: string
 	description?: string
 	city: string
-	createdAt?: string
-	updatedAt?: string
 }
 
-export interface CreateBranchDto {
-	name: string
-	description?: string
-	city: string
-}
+export type CreateBranchDto = Omit<Branch, '_id'>
+export type UpdateBranchDto = Partial<CreateBranchDto>

@@ -1,29 +1,34 @@
-// import { api } from '@/services/api'
-// import { CreateStatusDto, Status } from '@/types/status'
+import { api } from '@/services/api'
+import { CreateStatusDto, Status, UpdateStatusDto } from '@/types/status'
 
-// export const getStatuses = async (): Promise<Status[]> => {
-// 	const response = await api.get<Status[]>('/statuses')
-// 	return response.data
-// }
+// Получить все статусы
+export const getStatuses = async (): Promise<Status[]> => {
+	const response = await api.get<{ data: Status[] }>('/statuses')
+	return response.data.data
+}
 
-// export const getStatus = async (id: string): Promise<Status> => {
-// 	const response = await api.get<Status>(`/statuses/${id}`)
-// 	return response.data
-// }
+// Получить статус по ID (необязательно, но может пригодиться)
+export const getStatusById = async (id: string): Promise<Status> => {
+	const response = await api.get<{ data: Status }>(`/statuses/${id}`)
+	return response.data.data
+}
 
-// export const createStatus = async (data: CreateStatusDto): Promise<Status> => {
-// 	const response = await api.post<Status>('/statuses', data)
-// 	return response.data
-// }
+// Создать статус
+export const createStatus = async (data: CreateStatusDto): Promise<Status> => {
+	const response = await api.post<{ data: Status }>('/statuses', data)
+	return response.data.data
+}
 
-// export const updateStatus = async (
-// 	id: string,
-// 	data: CreateStatusDto
-// ): Promise<Status> => {
-// 	const response = await api.put<Status>(`/statuses/${id}`, data)
-// 	return response.data
-// }
+// Обновить статус
+export const updateStatus = async (
+	id: string,
+	data: UpdateStatusDto
+): Promise<Status> => {
+	const response = await api.patch<{ data: Status }>(`/statuses/${id}`, data)
+	return response.data.data
+}
 
-// export const deleteStatus = async (id: string): Promise<void> => {
-// 	await api.delete(`/statuses/${id}`)
-// }
+// Удалить статус
+export const deleteStatus = async (id: string): Promise<void> => {
+	await api.delete(`/statuses/${id}`)
+}

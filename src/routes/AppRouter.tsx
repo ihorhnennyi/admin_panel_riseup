@@ -1,19 +1,47 @@
+import { AuthLayout, Layout } from '@/layouts'
 import { NotFoundPage } from '@/pages'
-import { Suspense, lazy } from 'react'
+import { Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { routes } from './index'
-
-const loadPage = (name: string) =>
-	lazy(() => import(/* @vite-ignore */ `../pages/${name}`))
+import { lazyPages } from './lazyPages'
+import PrivateRoute from './PrivateRoute'
 
 const AppRouter = () => {
 	return (
 		<Suspense fallback={<div>Загрузка...</div>}>
 			<Routes>
-				{routes.map(({ path, element, lazy: isLazy }) => {
-					const Component = isLazy ? loadPage(element) : element
-					return <Route key={path} path={path} element={<Component />} />
-				})}
+				{/* Auth layout */}
+				<Route element={<AuthLayout />}>
+					{routes
+						.filter(route => route.layout === 'auth')
+						.map(route => {
+							const Page = lazyPages[route.element as keyof typeof lazyPages]
+							return (
+								<Route key={route.path} path={route.path} element={<Page />} />
+							)
+						})}
+				</Route>
+
+				{/* Main layout */}
+				<Route element={<Layout />}>
+					{routes
+						.filter(route => route.layout !== 'auth')
+						.map(route => {
+							const Page = lazyPages[route.element as keyof typeof lazyPages]
+
+							const element = route.private ? (
+								<PrivateRoute>
+									<Page />
+								</PrivateRoute>
+							) : (
+								<Page />
+							)
+
+							return (
+								<Route key={route.path} path={route.path} element={element} />
+							)
+						})}
+				</Route>
 
 				<Route path='*' element={<NotFoundPage />} />
 			</Routes>

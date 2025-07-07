@@ -1,24 +1,23 @@
+// src/widgets/InfoListBlockGroup.tsx
 import { InfoListBlock } from '@/components'
-import { analyticsBlocks } from '@/data/analyticsBlocks'
+import { useCandidatesAnalytics } from '@/hooks/useCandidatesAnalytics'
 import { Box } from '@mui/material'
 
-interface InfoListBlockGroupProps {
-	columns?: number
-	columnGap?: number
-	rowGap?: number
-}
+const InfoListBlockGroup = () => {
+	const { statuses, cities, sources } = useCandidatesAnalytics()
 
-const InfoListBlockGroup = ({
-	columns = 2,
-	columnGap = 4,
-	rowGap = 3,
-}: InfoListBlockGroupProps) => {
+	const analyticsBlocks = [
+		{ title: 'Кандидаты по статусам', items: statuses },
+		{ title: 'Кандидаты по городам', items: cities },
+		{ title: 'Кандидаты по источникам', items: sources },
+	]
+
 	return (
 		<Box
 			display='grid'
-			gridTemplateColumns={`repeat(${columns}, minmax(0, 1fr))`}
-			columnGap={columnGap}
-			rowGap={rowGap}
+			gridTemplateColumns='repeat(2, minmax(0, 1fr))'
+			columnGap={4}
+			rowGap={3}
 		>
 			{analyticsBlocks.map(block => (
 				<InfoListBlock

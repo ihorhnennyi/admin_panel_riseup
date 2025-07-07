@@ -1,3 +1,7 @@
+import UserFormModal from '@/components/UserFormModal'
+import { useAuth } from '@/context/AuthProvider'
+import { useUsers } from '@/hooks/useUsers'
+import { CreateUserDto, User } from '@/types/user'
 import { getRoleLabel } from '@/utils/roles'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import {
@@ -9,12 +13,9 @@ import {
 	Stack,
 	Typography,
 } from '@mui/material'
+import { useSnackbar } from 'notistack'
 import { useState } from 'react'
-
-interface User {
-	name: string
-	role: string
-}
+import { useNavigate } from 'react-router-dom'
 
 interface UserMenuProps {
 	user: User
@@ -22,7 +23,13 @@ interface UserMenuProps {
 
 const UserMenu = ({ user }: UserMenuProps) => {
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+	const [openEditModal, setOpenEditModal] = useState(false)
+
 	const open = Boolean(anchorEl)
+	const { handleSave } = useUsers()
+	const { logout } = useAuth()
+	const navigate = useNavigate()
+	const { enqueueSnackbar } = useSnackbar()
 
 	const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
 		setAnchorEl(event.currentTarget)
@@ -32,9 +39,30 @@ const UserMenu = ({ user }: UserMenuProps) => {
 		setAnchorEl(null)
 	}
 
-	const handleLogout = () => {
+	const handleLogout = async () => {
 		handleClose()
-		console.log('Выход из аккаунта')
+		await logout()
+		navigate('/')
+	}
+
+	const handleEdit = () => {
+		handleClose()
+		setOpenEditModal(true)
+	}
+
+	const handleModalClose = () => {
+		setOpenEditModal(false)
+	}
+
+	const handleModalSave = async (data: CreateUserDto & { _id?: string }) => {
+		try {
+			await handleSave(data)
+			enqueueSnackbar('Данные успешно сохранены', { variant: 'success' })
+			handleModalClose()
+		} catch (error) {
+			console.error(error)
+			enqueueSnackbar('Ошибка при сохранении', { variant: 'error' })
+		}
 	}
 
 	return (
@@ -48,7 +76,10 @@ const UserMenu = ({ user }: UserMenuProps) => {
 				aria-haspopup='true'
 				aria-controls='user-menu'
 			>
-				<Avatar sx={{ width: 32, height: 32 }}>{user.name[0]}</Avatar>
+				<Avatar sx={{ width: 32, height: 32 }} src={user.photoUrl || undefined}>
+					{user.name?.[0]?.toUpperCase() || '?'}
+				</Avatar>
+
 				<Box display={{ xs: 'none', sm: 'block' }}>
 					<Typography variant='body2' fontWeight={500}>
 						{user.name}
@@ -68,11 +99,17 @@ const UserMenu = ({ user }: UserMenuProps) => {
 				anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
 				transformOrigin={{ vertical: 'top', horizontal: 'right' }}
 			>
-				<MenuItem onClick={handleClose}>Профиль</MenuItem>
-				<MenuItem onClick={handleClose}>Настройки</MenuItem>
+				<MenuItem onClick={handleEdit}>Настройки</MenuItem>
 				<Divider />
 				<MenuItem onClick={handleLogout}>Выйти</MenuItem>
 			</Menu>
+
+			<UserFormModal
+				open={openEditModal}
+				initialData={user}
+				onClose={handleModalClose}
+				onSave={handleModalSave}
+			/>
 		</>
 	)
 }

@@ -1,103 +1,62 @@
 import { DataTable } from '@/components'
-import { useDataTableState } from '@/hooks/useDataTableState'
-import DeleteIcon from '@mui/icons-material/Delete'
-import EditIcon from '@mui/icons-material/Edit'
-import { IconButton } from '@mui/material'
-import { GridColDef } from '@mui/x-data-grid'
+import { Candidate } from '@/types/candidate'
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getCandidateColumns } from './columns'
+import { mapCandidatesToRows } from './helpers'
 
-// Тип строки таблицы
-export interface CandidateRow {
-	id: number
-	name: string
-	status: string
-	city: string
-	source: string
-}
-
-// Пропсы
 interface CandidatesTableProps {
-	onEditCandidate?: (candidate: CandidateRow) => void
+	candidates: Candidate[]
+	loading: boolean
+	total: number
+	page: number
+	pageSize: number
+	onPageChange: (model: { page: number; pageSize: number }) => void
+	onSortChange: (model: any) => void
+	onEditCandidate?: (candidate: Candidate) => void
+	onDeleteCandidate?: (id: string) => void
 }
 
-const CandidatesTable = ({ onEditCandidate }: CandidatesTableProps) => {
+const CandidatesTable = ({
+	candidates,
+	loading,
+	total,
+	page,
+	pageSize,
+	onPageChange,
+	onSortChange,
+	onEditCandidate,
+	onDeleteCandidate,
+}: CandidatesTableProps) => {
 	const navigate = useNavigate()
 
-	const { paginationModel, sortModel, setPaginationModel, setSortModel } =
-		useDataTableState()
-
-	const columns: GridColDef[] = useMemo(
-		() => [
-			{ field: 'id', headerName: 'ID', width: 80 },
-			{ field: 'name', headerName: 'Имя', flex: 1 },
-			{ field: 'status', headerName: 'Статус', width: 150 },
-			{ field: 'city', headerName: 'Город', width: 150 },
-			{ field: 'source', headerName: 'Источник', width: 150 },
-			{
-				field: 'actions',
-				headerName: '',
-				width: 100,
-				sortable: false,
-				disableColumnMenu: true,
-				renderCell: params => (
-					<>
-						<IconButton
-							color='primary'
-							size='small'
-							onClick={e => {
-								e.stopPropagation()
-								console.log('Edit', params.row.id)
-								onEditCandidate?.(params.row) // Вызовем callback
-							}}
-						>
-							<EditIcon fontSize='small' />
-						</IconButton>
-						<IconButton
-							color='error'
-							size='small'
-							onClick={e => {
-								e.stopPropagation()
-								console.log('Delete', params.row.id)
-								// TODO: здесь можно вставить confirm + delete
-							}}
-						>
-							<DeleteIcon fontSize='small' />
-						</IconButton>
-					</>
-				),
-			},
-		],
-		[onEditCandidate]
+	const rows = useMemo(
+		() => mapCandidatesToRows(Array.isArray(candidates) ? candidates : []),
+		[candidates]
 	)
 
-	const rows: CandidateRow[] = [
-		{
-			id: 1,
-			name: 'Иван Иванов',
-			status: 'Новый',
-			city: 'Киев',
-			source: 'Telegram',
-		},
-		{
-			id: 2,
-			name: 'Петр Петров',
-			status: 'Интервью',
-			city: 'Харьков',
-			source: 'Instagram',
-		},
-	]
+	const columns = useMemo(
+		() =>
+			getCandidateColumns({
+				onEdit: onEditCandidate,
+				onDelete: onDeleteCandidate,
+			}),
+		[onEditCandidate, onDeleteCandidate]
+	)
 
 	return (
 		<DataTable
 			columns={columns}
 			rows={rows}
-			pageSize={paginationModel.pageSize}
-			page={paginationModel.page}
-			onPageChange={setPaginationModel}
-			onSortChange={setSortModel}
+			loading={loading}
+			pageSize={pageSize}
+			page={page}
+			total={total}
+			onPageChange={onPageChange}
+			onSortChange={onSortChange}
 			onRowClick={params => {
-				navigate(`/candidates/${params.id}`)
+				const row = params.row
+				navigate(`/candidates/${row.original._id}`)
 			}}
 		/>
 	)

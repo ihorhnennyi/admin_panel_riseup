@@ -2,44 +2,62 @@ import { createStatus, updateStatus } from '@/services/statusService'
 import { CreateStatusDto, Status } from '@/types/status'
 import {
 	Button,
-	Checkbox,
 	Dialog,
 	DialogActions,
 	DialogContent,
 	DialogTitle,
-	FormControlLabel,
+	Stack,
 	TextField,
+	Typography,
 } from '@mui/material'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
 interface Props {
 	open: boolean
 	initialData?: Status | null
 	onClose: () => void
-	onSave: () => void
+	onSave: (status: Status) => void
 }
 
 const StatusFormModal = ({ open, initialData, onClose, onSave }: Props) => {
-	const { register, handleSubmit } = useForm<CreateStatusDto>({
-		defaultValues: initialData ?? {
+	const { register, handleSubmit, reset } = useForm<CreateStatusDto>({
+		defaultValues: {
 			name: '',
-			color: '',
+			color: '#000000', // значение по умолчанию, чтобы не было пустой строки
 			description: '',
-			order: 0,
-			type: 'initial',
-			isDefault: false,
-			isActive: true,
 		},
 	})
 
-	const onSubmit = async (data: CreateStatusDto) => {
-		if (initialData?._id) {
-			await updateStatus(initialData._id, data)
+	useEffect(() => {
+		if (initialData) {
+			reset({
+				name: initialData.name,
+				color: initialData.color || '#000000',
+				description: initialData.description,
+			})
 		} else {
-			await createStatus(data)
+			reset({
+				name: '',
+				color: '#000000',
+				description: '',
+			})
 		}
-		onSave()
-		onClose()
+	}, [initialData, reset])
+
+	const onSubmit = async (data: CreateStatusDto) => {
+		try {
+			let result: Status
+			if (initialData?._id) {
+				result = await updateStatus(initialData._id, data)
+			} else {
+				result = await createStatus(data)
+			}
+			onSave(result)
+			onClose()
+		} catch (error) {
+			console.error('Ошибка при сохранении статуса:', error)
+		}
 	}
 
 	return (
@@ -54,38 +72,30 @@ const StatusFormModal = ({ open, initialData, onClose, onSave }: Props) => {
 					fullWidth
 					margin='normal'
 				/>
-				<TextField
-					label='Цвет'
-					{...register('color')}
-					fullWidth
-					margin='normal'
-				/>
+
+				<Stack spacing={1} marginTop={2}>
+					<Typography variant='body2' color='textSecondary'>
+						Цвет
+					</Typography>
+					<input
+						type='color'
+						{...register('color')}
+						style={{
+							width: '100%',
+							height: 40,
+							border: 'none',
+							padding: 0,
+							background: 'none',
+							cursor: 'pointer',
+						}}
+					/>
+				</Stack>
+
 				<TextField
 					label='Описание'
 					{...register('description')}
 					fullWidth
 					margin='normal'
-				/>
-				<TextField
-					label='Порядок (order)'
-					type='number'
-					{...register('order', { valueAsNumber: true })}
-					fullWidth
-					margin='normal'
-				/>
-				<TextField
-					label='Тип (initial | interview | final)'
-					{...register('type')}
-					fullWidth
-					margin='normal'
-				/>
-				<FormControlLabel
-					control={<Checkbox {...register('isDefault')} />}
-					label='По умолчанию'
-				/>
-				<FormControlLabel
-					control={<Checkbox {...register('isActive')} />}
-					label='Активен'
 				/>
 			</DialogContent>
 			<DialogActions>

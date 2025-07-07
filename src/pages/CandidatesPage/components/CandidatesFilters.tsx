@@ -1,4 +1,14 @@
 import { DateRangePicker } from '@/components'
+import { useCities } from '@/hooks/useCities'
+import { useSources } from '@/hooks/useSources'
+import { useStatuses } from '@/hooks/useStatuses'
+import { useUsers } from '@/hooks/useUsers'
+import { CandidatesFiltersData } from '@/types/filters'
+import {
+	clearFiltersStorage,
+	loadFiltersFromStorage,
+	saveFiltersToStorage,
+} from '@/utils/filtersStorage'
 import RestartAltIcon from '@mui/icons-material/RestartAlt'
 import {
 	Box,
@@ -10,48 +20,57 @@ import {
 	TextField,
 	Tooltip,
 } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
-const statuses = ['Все', 'Новый', 'В работе', 'Интервью', 'Отказ', 'Принят']
-const sources = ['Все', 'Telegram', 'Instagram', 'Реклама', 'Сайт']
-const recruiters = ['Все', 'Иванов', 'Петров', 'Сидоров']
+interface Props {
+	filters: CandidatesFiltersData
+	onChange: (filters: CandidatesFiltersData) => void
+}
 
-const FILTERS_KEY = 'candidatesFilters'
-
-const CandidatesFilters = () => {
-	const [status, setStatus] = useState('Все')
-	const [source, setSource] = useState('Все')
-	const [recruiter, setRecruiter] = useState('Все')
-	const [search, setSearch] = useState('')
-	const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
-		null,
-		null,
-	])
+const CandidatesFilters = ({ filters, onChange }: Props) => {
+	const { statuses } = useStatuses()
+	const { sources } = useSources()
+	const { users } = useUsers()
+	const { cities } = useCities()
 
 	useEffect(() => {
-		const saved = localStorage.getItem(FILTERS_KEY)
-		if (saved) {
-			const parsed = JSON.parse(saved)
-			setStatus(parsed.status ?? 'Все')
-			setSource(parsed.source ?? 'Все')
-			setRecruiter(parsed.recruiter ?? 'Все')
-			setSearch(parsed.search ?? '')
-			setDateRange(parsed.dateRange ?? [null, null])
-		}
+		const saved = loadFiltersFromStorage()
+		if (saved) onChange(saved)
 	}, [])
 
 	useEffect(() => {
-		const filters = { status, source, recruiter, search, dateRange }
-		localStorage.setItem(FILTERS_KEY, JSON.stringify(filters))
-	}, [status, source, recruiter, search, dateRange])
+		saveFiltersToStorage(filters)
+	}, [filters])
+
+	const handleChange = (key: keyof CandidatesFiltersData, value: any) => {
+		let newFilters = { ...filters, [key]: value }
+
+		// автообрезка времени до конца дня, если дата одинаковая
+		if (
+			key === 'dateRange' &&
+			value?.[0] instanceof Date &&
+			value?.[1] instanceof Date &&
+			value[0].toDateString() === value[1].toDateString()
+		) {
+			const endDate = new Date(value[1])
+			endDate.setHours(23, 59, 59, 999)
+			newFilters.dateRange = [value[0], endDate]
+		}
+
+		onChange(newFilters)
+	}
 
 	const resetFilters = () => {
-		setStatus('Все')
-		setSource('Все')
-		setRecruiter('Все')
-		setSearch('')
-		setDateRange([null, null])
-		localStorage.removeItem(FILTERS_KEY)
+		const reset: CandidatesFiltersData = {
+			status: '',
+			source: '',
+			recruiter: '',
+			city: '',
+			search: '',
+			dateRange: [null, null],
+		}
+		onChange(reset)
+		clearFiltersStorage()
 	}
 
 	return (
@@ -59,22 +78,23 @@ const CandidatesFilters = () => {
 			<TextField
 				label='Поиск'
 				variant='outlined'
-				value={search}
-				onChange={e => setSearch(e.target.value)}
+				value={filters.search}
+				onChange={e => handleChange('search', e.target.value)}
 				size='small'
 			/>
 
 			<FormControl size='small'>
 				<InputLabel>Статус</InputLabel>
 				<Select
-					value={status}
+					value={filters.status}
 					label='Статус'
-					onChange={e => setStatus(e.target.value)}
+					onChange={e => handleChange('status', e.target.value)}
 					sx={{ minWidth: 150 }}
 				>
+					<MenuItem value=''>Все</MenuItem>
 					{statuses.map(s => (
-						<MenuItem key={s} value={s}>
-							{s}
+						<MenuItem key={s._id} value={s._id}>
+							{s.name}
 						</MenuItem>
 					))}
 				</Select>
@@ -83,14 +103,32 @@ const CandidatesFilters = () => {
 			<FormControl size='small'>
 				<InputLabel>Источник</InputLabel>
 				<Select
-					value={source}
+					value={filters.source}
 					label='Источник'
-					onChange={e => setSource(e.target.value)}
+					onChange={e => handleChange('source', e.target.value)}
 					sx={{ minWidth: 150 }}
 				>
+					<MenuItem value=''>Все</MenuItem>
 					{sources.map(s => (
-						<MenuItem key={s} value={s}>
-							{s}
+						<MenuItem key={s._id} value={s._id}>
+							{s.name}
+						</MenuItem>
+					))}
+				</Select>
+			</FormControl>
+
+			<FormControl size='small'>
+				<InputLabel>Город</InputLabel>
+				<Select
+					value={filters.city}
+					label='Город'
+					onChange={e => handleChange('city', e.target.value)}
+					sx={{ minWidth: 150 }}
+				>
+					<MenuItem value=''>Все</MenuItem>
+					{cities.map(city => (
+						<MenuItem key={city._id} value={city._id}>
+							{city.name}
 						</MenuItem>
 					))}
 				</Select>
@@ -99,20 +137,24 @@ const CandidatesFilters = () => {
 			<FormControl size='small'>
 				<InputLabel>Рекрутер</InputLabel>
 				<Select
-					value={recruiter}
+					value={filters.recruiter}
 					label='Рекрутер'
-					onChange={e => setRecruiter(e.target.value)}
+					onChange={e => handleChange('recruiter', e.target.value)}
 					sx={{ minWidth: 150 }}
 				>
-					{recruiters.map(r => (
-						<MenuItem key={r} value={r}>
-							{r}
+					<MenuItem value=''>Все</MenuItem>
+					{users.map(user => (
+						<MenuItem key={user._id} value={user._id}>
+							{user.name}
 						</MenuItem>
 					))}
 				</Select>
 			</FormControl>
 
-			<DateRangePicker value={dateRange} onChange={setDateRange} />
+			<DateRangePicker
+				value={filters.dateRange}
+				onChange={value => handleChange('dateRange', value)}
+			/>
 
 			<Tooltip title='Сбросить фильтры'>
 				<IconButton onClick={resetFilters} color='primary'>

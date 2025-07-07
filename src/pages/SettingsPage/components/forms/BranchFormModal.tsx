@@ -1,39 +1,68 @@
-import { createBranch, updateBranch } from '@/services/branchService'
 import { Branch, CreateBranchDto } from '@/types/branch'
+import { City } from '@/types/city'
 import {
 	Button,
 	Dialog,
 	DialogActions,
 	DialogContent,
 	DialogTitle,
+	FormControl,
+	InputLabel,
+	MenuItem,
+	Select,
 	TextField,
 } from '@mui/material'
-import { useForm } from 'react-hook-form'
+import { useEffect } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 
 interface Props {
 	open: boolean
 	initialData?: Branch | null
 	onClose: () => void
-	onSave: () => void
+	onSave: (data: CreateBranchDto | (CreateBranchDto & { _id: string })) => void
+	cities: City[]
 }
 
-const BranchFormModal = ({ open, initialData, onClose, onSave }: Props) => {
-	const { register, handleSubmit, reset } = useForm<CreateBranchDto>({
-		defaultValues: initialData ?? {
+const BranchFormModal = ({
+	open,
+	initialData,
+	onClose,
+	onSave,
+	cities,
+}: Props) => {
+	const { register, handleSubmit, reset, control } = useForm<CreateBranchDto>({
+		defaultValues: {
 			name: '',
 			description: '',
-			city: '', // id города
+			city: '',
 		},
 	})
 
-	const onSubmit = async (data: CreateBranchDto) => {
-		if (initialData?._id) {
-			await updateBranch(initialData._id, data)
+	useEffect(() => {
+		if (initialData) {
+			reset({
+				name: initialData.name,
+				description: initialData.description,
+				city:
+					typeof initialData.city === 'string'
+						? initialData.city
+						: (initialData.city as any)._id || '',
+			})
 		} else {
-			await createBranch(data)
+			reset({
+				name: '',
+				description: '',
+				city: '',
+			})
 		}
-		onSave()
-		onClose()
+	}, [initialData, reset])
+
+	const onSubmit = (data: CreateBranchDto) => {
+		if (initialData?._id) {
+			onSave({ ...data, _id: initialData._id })
+		} else {
+			onSave(data)
+		}
 	}
 
 	return (
@@ -54,12 +83,23 @@ const BranchFormModal = ({ open, initialData, onClose, onSave }: Props) => {
 					fullWidth
 					margin='normal'
 				/>
-				<TextField
-					label='ID города'
-					{...register('city')}
-					fullWidth
-					margin='normal'
-				/>
+
+				<FormControl fullWidth margin='normal'>
+					<InputLabel>Город</InputLabel>
+					<Controller
+						control={control}
+						name='city'
+						render={({ field }) => (
+							<Select {...field} label='Город'>
+								{cities.map(city => (
+									<MenuItem key={city._id} value={city._id}>
+										{city.name}
+									</MenuItem>
+								))}
+							</Select>
+						)}
+					/>
+				</FormControl>
 			</DialogContent>
 			<DialogActions>
 				<Button onClick={onClose}>Отмена</Button>

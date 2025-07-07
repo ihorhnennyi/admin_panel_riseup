@@ -1,19 +1,25 @@
 import { Header, Sidebar } from '@/layouts'
 import { Box } from '@mui/material'
-import { ReactNode } from 'react'
+import { Outlet } from 'react-router-dom'
 
-interface LayoutProps {
-	children: ReactNode
-}
-
-const Layout = ({ children }: LayoutProps) => {
+const Layout = () => {
 	return (
 		<Box display='flex' flexDirection='column' height='100vh'>
 			<Header />
 			<Box display='flex' flex={1} overflow='hidden'>
 				<Sidebar />
-				<Box component='main' role='main' flex={1} p={2} overflow='auto'>
-					{children}
+				<Box
+					component='main'
+					role='main'
+					flex={1}
+					p={2}
+					overflow='auto'
+					sx={{
+						bgcolor: 'background.default',
+						color: 'text.primary',
+					}}
+				>
+					<Outlet />
 				</Box>
 			</Box>
 		</Box>

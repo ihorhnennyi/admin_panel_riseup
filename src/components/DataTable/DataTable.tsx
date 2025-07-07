@@ -19,6 +19,9 @@ interface DataTableProps {
 	onSortChange?: (model: GridSortModel) => void
 	onRowSelectionChange?: (selection: GridRowSelectionModel) => void
 	onRowClick?: (params: GridRowParams) => void
+	getRowId?: (row: any) => string | number
+	/** 👇 добавляем */
+	onPageSizeChange?: (pageSize: number) => void
 }
 
 const DataTable = ({
@@ -29,9 +32,11 @@ const DataTable = ({
 	total = 0,
 	page = 0,
 	onPageChange,
+	onPageSizeChange,
 	onSortChange,
 	onRowSelectionChange,
 	onRowClick,
+	getRowId,
 }: DataTableProps) => {
 	return (
 		<Box sx={{ width: '100%' }}>
@@ -46,13 +51,17 @@ const DataTable = ({
 					pageSize,
 					page,
 				}}
-				onPaginationModelChange={onPageChange}
+				onPaginationModelChange={({ page, pageSize }) => {
+					onPageChange?.({ page, pageSize })
+					onPageSizeChange?.(pageSize)
+				}}
 				loading={loading}
 				disableRowSelectionOnClick
 				onRowSelectionModelChange={onRowSelectionChange}
 				onRowClick={onRowClick}
 				sortingMode='server'
 				onSortModelChange={onSortChange}
+				getRowId={getRowId}
 				sx={{
 					borderRadius: 2,
 					border: 'none',

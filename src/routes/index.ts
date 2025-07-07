@@ -13,7 +13,7 @@ export interface AppRoute {
 
 export const routes: AppRoute[] = [
 	{
-		path: '/',
+		path: '/dashboard',
 		name: 'Дашборд',
 		element: 'DashboardPage',
 		lazy: true,
@@ -86,7 +86,7 @@ export const routes: AppRoute[] = [
 		showInSidebar: false,
 	},
 	{
-		path: '/login',
+		path: '/',
 		name: 'Вход',
 		element: 'LoginPage',
 		lazy: true,

@@ -1,3 +1,7 @@
+import { useCities } from '@/hooks/useCities'
+import { useSources } from '@/hooks/useSources'
+import { useStatuses } from '@/hooks/useStatuses'
+import { Candidate, CreateCandidateDto } from '@/types/candidate'
 import {
 	Button,
 	CircularProgress,
@@ -13,23 +17,14 @@ import {
 } from '@mui/material'
 import { useEffect, useState } from 'react'
 
-interface CandidateData {
-	id?: number
-	name: string
-	status: string
-	city: string
-	source: string
-}
-
 interface CandidateFormModalProps {
 	open: boolean
-	initialData?: CandidateData
+	initialData?: Candidate
 	onClose: () => void
-	onSave: (data: CandidateData) => void
+	onSave: (
+		data: CreateCandidateDto | (CreateCandidateDto & { _id: string })
+	) => Promise<void> // <-- вот тут
 }
-
-const statuses = ['Новый', 'В работе', 'Интервью', 'Отказ', 'Принят']
-const sources = ['Telegram', 'Instagram', 'Реклама', 'Сайт']
 
 const CandidateFormModal = ({
 	open,
@@ -37,50 +32,113 @@ const CandidateFormModal = ({
 	onClose,
 	onSave,
 }: CandidateFormModalProps) => {
-	const [formData, setFormData] = useState<CandidateData>({
-		name: '',
-		status: 'Новый',
+	const { statuses } = useStatuses()
+	const { cities } = useCities()
+	const { sources } = useSources()
+
+	const [formData, setFormData] = useState<CreateCandidateDto>({
+		firstName: '',
+		lastName: '',
+		middleName: '',
+		email: '',
+		phone: '',
+		age: undefined,
+		position: '',
+		salary: undefined,
+		gender: '',
+		employmentType: '',
+		description: '',
+		status: '',
 		city: '',
-		source: 'Telegram',
+		source: '',
+		isActive: true,
 	})
 
 	const [loading, setLoading] = useState(false)
 
 	useEffect(() => {
+		if (!statuses.length || !cities.length || !sources.length) return
+
 		if (initialData) {
-			setFormData(initialData)
-		} else {
 			setFormData({
-				name: '',
-				status: 'Новый',
+				firstName: initialData.firstName ?? '',
+				lastName: initialData.lastName ?? '',
+				middleName: initialData.middleName ?? '',
+				email: initialData.email ?? '',
+				phone: initialData.phone ?? '',
+				age: initialData.age ?? undefined,
+				position: initialData.position ?? '',
+				salary: initialData.salary ?? undefined,
+				gender: initialData.gender ?? '',
+				employmentType: initialData.employmentType ?? '',
+				description: initialData.description ?? '',
+				status:
+					typeof initialData.status === 'object'
+						? initialData.status._id ?? ''
+						: initialData.status,
+				city:
+					typeof initialData.city === 'object'
+						? initialData.city._id ?? ''
+						: initialData.city,
+				source:
+					typeof initialData.source === 'object'
+						? initialData.source._id ?? ''
+						: initialData.source,
+				isActive: initialData.isActive ?? true,
+			})
+		} else {
+			// Полностью пустая форма
+			setFormData({
+				firstName: '',
+				lastName: '',
+				middleName: '',
+				email: '',
+				phone: '',
+				age: undefined,
+				position: '',
+				salary: undefined,
+				gender: '',
+				employmentType: '',
+				description: '',
+				status: '',
 				city: '',
-				source: 'Telegram',
+				source: '',
+				isActive: true,
 			})
 		}
-	}, [initialData, open])
+	}, [initialData, open, statuses, cities, sources])
 
-	const handleChange = (field: keyof CandidateData, value: any) => {
+	const handleChange = (field: keyof CreateCandidateDto, value: any) => {
 		setFormData(prev => ({ ...prev, [field]: value }))
 	}
 
-	const handleSave = () => {
+	const handleSave = async () => {
 		setLoading(true)
-		setTimeout(() => {
-			onSave(formData)
+
+		if (
+			formData.email &&
+			!/^[\w.-]+@[\w.-]+\.[a-z]{2,}$/i.test(formData.email)
+		) {
+			alert('Введите корректный email')
 			setLoading(false)
+			return
+		}
+
+		try {
+			await onSave(
+				initialData?._id ? { ...formData, _id: initialData._id } : formData
+			)
 			onClose()
-		}, 1000) // имитация запроса
+		} catch (error) {
+			console.error('Ошибка при сохранении кандидата:', error)
+		} finally {
+			setLoading(false)
+		}
 	}
 
 	return (
-		<Dialog
-			open={open}
-			onClose={onClose}
-			maxWidth='sm'
-			fullWidth
-			PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
-		>
-			<DialogTitle sx={{ fontWeight: 600 }}>
+		<Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
+			<DialogTitle>
 				{initialData ? 'Редактировать кандидата' : 'Добавить кандидата'}
 			</DialogTitle>
 
@@ -89,10 +147,84 @@ const CandidateFormModal = ({
 			>
 				<TextField
 					label='Имя'
-					value={formData.name}
-					onChange={e => handleChange('name', e.target.value)}
-					fullWidth
+					value={formData.firstName}
+					onChange={e => handleChange('firstName', e.target.value)}
 					size='small'
+					fullWidth
+				/>
+				<TextField
+					label='Фамилия'
+					value={formData.lastName}
+					onChange={e => handleChange('lastName', e.target.value)}
+					size='small'
+					fullWidth
+				/>
+				<TextField
+					label='Отчество'
+					value={formData.middleName}
+					onChange={e => handleChange('middleName', e.target.value)}
+					size='small'
+					fullWidth
+				/>
+				<TextField
+					label='Email'
+					value={formData.email}
+					onChange={e => handleChange('email', e.target.value)}
+					size='small'
+					fullWidth
+				/>
+				<TextField
+					label='Телефон'
+					value={formData.phone}
+					onChange={e => handleChange('phone', e.target.value)}
+					size='small'
+					fullWidth
+				/>
+				<TextField
+					label='Возраст'
+					type='number'
+					value={formData.age ?? ''}
+					onChange={e => handleChange('age', Number(e.target.value))}
+					size='small'
+					fullWidth
+				/>
+				<TextField
+					label='Позиция'
+					value={formData.position}
+					onChange={e => handleChange('position', e.target.value)}
+					size='small'
+					fullWidth
+				/>
+				<TextField
+					label='Желаемая зарплата'
+					type='number'
+					value={formData.salary ?? ''}
+					onChange={e => handleChange('salary', Number(e.target.value))}
+					size='small'
+					fullWidth
+				/>
+				<TextField
+					label='Пол'
+					value={formData.gender}
+					onChange={e => handleChange('gender', e.target.value)}
+					size='small'
+					fullWidth
+				/>
+				<TextField
+					label='Тип занятости'
+					value={formData.employmentType}
+					onChange={e => handleChange('employmentType', e.target.value)}
+					size='small'
+					fullWidth
+				/>
+				<TextField
+					label='Описание'
+					value={formData.description}
+					onChange={e => handleChange('description', e.target.value)}
+					size='small'
+					fullWidth
+					multiline
+					rows={2}
 				/>
 
 				<FormControl size='small' fullWidth>
@@ -102,21 +234,28 @@ const CandidateFormModal = ({
 						label='Статус'
 						onChange={e => handleChange('status', e.target.value)}
 					>
-						{statuses.map(status => (
-							<MenuItem key={status} value={status}>
-								{status}
+						{statuses.map(s => (
+							<MenuItem key={s._id} value={s._id}>
+								{s.name}
 							</MenuItem>
 						))}
 					</Select>
 				</FormControl>
 
-				<TextField
-					label='Город'
-					value={formData.city}
-					onChange={e => handleChange('city', e.target.value)}
-					fullWidth
-					size='small'
-				/>
+				<FormControl size='small' fullWidth>
+					<InputLabel>Город</InputLabel>
+					<Select
+						value={formData.city}
+						label='Город'
+						onChange={e => handleChange('city', e.target.value)}
+					>
+						{cities.map(c => (
+							<MenuItem key={c._id} value={c._id}>
+								{c.name}
+							</MenuItem>
+						))}
+					</Select>
+				</FormControl>
 
 				<FormControl size='small' fullWidth>
 					<InputLabel>Источник</InputLabel>
@@ -125,9 +264,9 @@ const CandidateFormModal = ({
 						label='Источник'
 						onChange={e => handleChange('source', e.target.value)}
 					>
-						{sources.map(source => (
-							<MenuItem key={source} value={source}>
-								{source}
+						{sources.map(src => (
+							<MenuItem key={src._id} value={src._id}>
+								{src.name}
 							</MenuItem>
 						))}
 					</Select>
@@ -142,7 +281,7 @@ const CandidateFormModal = ({
 					variant='contained'
 					color='primary'
 					onClick={handleSave}
-					disabled={!formData.name || loading}
+					disabled={!formData.firstName || !formData.status || loading}
 					startIcon={
 						loading ? <CircularProgress size={20} color='inherit' /> : undefined
 					}

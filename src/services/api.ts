@@ -1,31 +1,93 @@
-// import axios from 'axios'
+import axios from 'axios'
+import {
+	clearTokens,
+	getAccessToken,
+	getRefreshToken,
+	setTokens,
+} from './tokenService'
 
-// const API_URL =
-// 	process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'
+const API_URL = 'http://localhost:5000'
 
-// export const api = axios.create({
-// 	baseURL: API_URL,
-// 	timeout: 10000,
-// 	headers: {
-// 		'Content-Type': 'application/json',
-// 	},
-// })
+type AuthResponse = {
+	accessToken: string
+	refreshToken: string
+}
 
-// 👉 Пример interceptor для добавления токена (потом допишем):
-// api.interceptors.request.use((config) => {
-//   const token = localStorage.getItem('accessToken');
-//   if (token) {
-//     config.headers.Authorization = `Bearer ${token}`;
-//   }
-//   return config;
-// });
+export const api = axios.create({
+	baseURL: API_URL,
+	headers: {
+		'Content-Type': 'application/json',
+	},
+})
 
-// 👉 Пример interceptor для ловли ошибок (можно добавить toast):
-// api.interceptors.response.use(
-//   (response) => response,
-//   (error) => {
-//     console.error('API Error:', error);
-//     // можно добавить toast error
-//     return Promise.reject(error);
-//   }
-// );
+api.interceptors.request.use(config => {
+	const token = getAccessToken()
+	if (token && config.headers) {
+		config.headers.Authorization = `Bearer ${token}`
+	}
+	return config
+})
+
+let isRefreshing = false
+let queue: any[] = []
+
+const processQueue = (error: any, token: string | null) => {
+	queue.forEach(p => (error ? p.reject(error) : p.resolve(token)))
+	queue = []
+}
+
+api.interceptors.response.use(
+	response => response,
+	async error => {
+		const originalRequest = error.config
+
+		if (
+			error.response?.status === 401 &&
+			!originalRequest._retry &&
+			!originalRequest.url.includes('/auth/refresh')
+		) {
+			if (isRefreshing) {
+				return new Promise((resolve, reject) => {
+					queue.push({
+						resolve: (token: string) => {
+							originalRequest.headers.Authorization = `Bearer ${token}`
+							resolve(api(originalRequest))
+						},
+						reject,
+					})
+				})
+			}
+
+			originalRequest._retry = true
+			isRefreshing = true
+
+			try {
+				const refreshToken = getRefreshToken()
+				if (!refreshToken) throw new Error('Missing refresh token')
+
+				const { data } = await axios.post<{ data: AuthResponse }>(
+					`${API_URL}/auth/refresh`,
+					{ refreshToken }
+				)
+
+				const { accessToken, refreshToken: newRefreshToken } = data.data
+
+				setTokens(accessToken, newRefreshToken)
+				processQueue(null, accessToken)
+
+				originalRequest.headers.Authorization = `Bearer ${accessToken}`
+				return api(originalRequest)
+			} catch (err) {
+				processQueue(err, null)
+				clearTokens()
+				window.location.href =
+					'/?redirect=' + encodeURIComponent(window.location.pathname)
+				return Promise.reject(err)
+			} finally {
+				isRefreshing = false
+			}
+		}
+
+		return Promise.reject(error)
+	}
+)

@@ -1,11 +1,9 @@
 import react from '@vitejs/plugin-react'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import * as path from 'path'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const __dirname = process.cwd()
 
 export default defineConfig({
 	plugins: [
@@ -31,6 +29,10 @@ export default defineConfig({
 						type: 'image/png',
 					},
 				],
+			},
+
+			workbox: {
+				maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
 			},
 		}),
 	],

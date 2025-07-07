@@ -1,35 +1,37 @@
 import { DateRangePicker } from '@/components'
 import RestartAltIcon from '@mui/icons-material/RestartAlt'
 import { Box, IconButton, TextField, Tooltip } from '@mui/material'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 const FILTERS_KEY = 'statisticsFilters'
 
-const StatisticsFilters = () => {
-	const [search, setSearch] = useState('')
-	const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
-		null,
-		null,
-	])
+interface Props {
+	filters: {
+		search: string
+		dateRange: [Date | null, Date | null]
+	}
+	setFilters: React.Dispatch<
+		React.SetStateAction<{
+			search: string
+			dateRange: [Date | null, Date | null]
+		}>
+	>
+}
+
+const StatisticsFilters = ({ filters, setFilters }: Props) => {
+	const prevFiltersRef = useRef(filters)
 
 	useEffect(() => {
-		const saved = localStorage.getItem(FILTERS_KEY)
-		if (saved) {
-			const parsed = JSON.parse(saved)
-			setSearch(parsed.search ?? '')
-			setDateRange(parsed.dateRange ?? [null, null])
+		if (JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters)) {
+			localStorage.setItem(FILTERS_KEY, JSON.stringify(filters))
+			prevFiltersRef.current = filters
 		}
-	}, [])
-
-	useEffect(() => {
-		const filters = { search, dateRange }
-		localStorage.setItem(FILTERS_KEY, JSON.stringify(filters))
-	}, [search, dateRange])
+	}, [filters])
 
 	const resetFilters = () => {
-		setSearch('')
-		setDateRange([null, null])
-		localStorage.removeItem(FILTERS_KEY)
+		const empty = { search: '', dateRange: [null, null] as [null, null] }
+		setFilters(empty)
+		localStorage.setItem(FILTERS_KEY, JSON.stringify(empty))
 	}
 
 	return (
@@ -37,12 +39,17 @@ const StatisticsFilters = () => {
 			<TextField
 				label='Поиск'
 				variant='outlined'
-				value={search}
-				onChange={e => setSearch(e.target.value)}
+				value={filters.search}
+				onChange={e =>
+					setFilters(prev => ({ ...prev, search: e.target.value }))
+				}
 				size='small'
 			/>
 
-			<DateRangePicker value={dateRange} onChange={setDateRange} />
+			<DateRangePicker
+				value={filters.dateRange}
+				onChange={dateRange => setFilters(prev => ({ ...prev, dateRange }))}
+			/>
 
 			<Tooltip title='Сбросить фильтры'>
 				<IconButton onClick={resetFilters} color='primary'>

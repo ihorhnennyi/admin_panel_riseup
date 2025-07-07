@@ -1,5 +1,5 @@
 import ChartCard from '@/components/ChartCard'
-import { leads30Days, leads7Days } from '@/data/newLeads'
+import { useLeadsByDays } from '@/hooks/useLeadsByDays'
 import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material'
 import { useState } from 'react'
 import {
@@ -13,13 +13,12 @@ import {
 } from 'recharts'
 
 const NewLeadsChart = () => {
-	const [period, setPeriod] = useState<'7' | '30'>('7')
+	const [period, setPeriod] = useState<7 | 30>(7)
+	const { data } = useLeadsByDays(period)
 
-	const handleChange = (_: any, newValue: '7' | '30') => {
-		if (newValue) setPeriod(newValue)
+	const handleChange = (_: any, newVal: 7 | 30) => {
+		if (newVal) setPeriod(newVal)
 	}
-
-	const data = period === '7' ? leads7Days : leads30Days
 
 	return (
 		<ChartCard title='Динамика новых лидов'>
@@ -34,10 +33,9 @@ const NewLeadsChart = () => {
 					exclusive
 					onChange={handleChange}
 					size='small'
-					color='primary'
 				>
-					<ToggleButton value='7'>7 дней</ToggleButton>
-					<ToggleButton value='30'>30 дней</ToggleButton>
+					<ToggleButton value={7}>7 дней</ToggleButton>
+					<ToggleButton value={30}>30 дней</ToggleButton>
 				</ToggleButtonGroup>
 			</Box>
 

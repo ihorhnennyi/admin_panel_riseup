@@ -1,6 +1,7 @@
 import { Logo, ToggleTheme, UserMenu } from '@/components'
+import { useAuth } from '@/context/AuthProvider'
 import { useSidebar } from '@/context/SidebarContext'
-import { getRoleLabel } from '@/utils/roles'
+import { getRoleLabelGenitive } from '@/utils/roles'
 import MenuIcon from '@mui/icons-material/Menu'
 import {
 	AppBar,
@@ -11,13 +12,9 @@ import {
 	Typography,
 } from '@mui/material'
 
-const user = {
-	name: 'Игорь',
-	role: 'admin',
-}
-
 const Header = () => {
 	const { toggleSidebar } = useSidebar()
+	const { user } = useAuth()
 
 	return (
 		<AppBar
@@ -30,24 +27,29 @@ const Header = () => {
 			}}
 		>
 			<Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+				{/* Левая часть — кнопка меню и роль */}
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 					<IconButton onClick={toggleSidebar} edge='start' color='inherit'>
 						<MenuIcon />
 					</IconButton>
 					<Typography variant='h6' noWrap>
-						Панель {getRoleLabel(user.role)}
+						Панель {user?.role ? getRoleLabelGenitive(user.role) : ''}
 					</Typography>
 				</Box>
 
+				{/* Центр — логотип */}
 				<Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
 					<Logo title='Rise UP' />
 				</Box>
 
+				{/* Правая часть — переключатель темы и меню пользователя */}
 				<Stack direction='row' alignItems='center' spacing={2}>
-					{/* <SearchBar /> */}
-					{/* <Notifications /> */}
 					<ToggleTheme />
-					<UserMenu user={user} />
+					{user && ['admin', 'recruiter'].includes(user.role) && (
+						<UserMenu
+							user={{ ...user, role: user.role as 'admin' | 'recruiter' }}
+						/>
+					)}
 				</Stack>
 			</Toolbar>
 		</AppBar>

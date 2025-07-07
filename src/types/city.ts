@@ -3,14 +3,8 @@ export interface City {
 	name: string
 	latitude?: number
 	longitude?: number
-	color?: string
-	createdAt?: string
-	updatedAt?: string
+	color: string
 }
 
-export interface CreateCityDto {
-	name: string
-	latitude?: number
-	longitude?: number
-	color?: string
-}
+export type CreateCityDto = Omit<City, '_id'>
+export type UpdateCityDto = Partial<CreateCityDto>

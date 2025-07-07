@@ -1,3 +1,4 @@
+import { useAuth } from '@/context/AuthProvider'
 import { useSidebar } from '@/context/SidebarContext'
 import * as Icons from '@mui/icons-material'
 import {
@@ -12,8 +13,6 @@ import {
 import { routes } from '@routes/index'
 import { NavLink } from 'react-router-dom'
 
-const userRole = 'admin'
-
 const renderIcon = (iconName?: string) => {
 	if (!iconName) return null
 	const IconComponent = Icons[iconName as keyof typeof Icons]
@@ -23,6 +22,8 @@ const renderIcon = (iconName?: string) => {
 const Sidebar = () => {
 	const theme = useTheme()
 	const { collapsed } = useSidebar()
+	const { user } = useAuth()
+	const userRole = user?.role
 
 	return (
 		<Box
@@ -43,6 +44,7 @@ const Sidebar = () => {
 						route =>
 							route.showInSidebar !== false &&
 							route.private &&
+							userRole &&
 							route.roles?.includes(userRole)
 					)
 					.map(route => (

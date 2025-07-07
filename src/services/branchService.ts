@@ -1,29 +1,34 @@
-// import { api } from '@/services/api'
-// import { Branch, CreateBranchDto } from '@/types/branch'
+import { Branch, CreateBranchDto, UpdateBranchDto } from '@/types/branch'
+import { api } from './api'
 
-// export const getBranches = async (): Promise<Branch[]> => {
-// 	const response = await api.get<Branch[]>('/branches')
-// 	return response.data
-// }
+// Получить все филиалы
+export const getBranches = async (): Promise<Branch[]> => {
+	const response = await api.get<{ data: Branch[] }>('/branches')
+	return response.data.data
+}
 
-// export const getBranch = async (id: string): Promise<Branch> => {
-// 	const response = await api.get<Branch>(`/branches/${id}`)
-// 	return response.data
-// }
+// Получить филиал по ID (необязательно, но оставим)
+export const getBranchById = async (id: string): Promise<Branch> => {
+	const response = await api.get<{ data: Branch }>(`/branches/${id}`)
+	return response.data.data
+}
 
-// export const createBranch = async (data: CreateBranchDto): Promise<Branch> => {
-// 	const response = await api.post<Branch>('/branches', data)
-// 	return response.data
-// }
+// Создать филиал
+export const createBranch = async (data: CreateBranchDto): Promise<Branch> => {
+	const response = await api.post<{ data: Branch }>('/branches', data)
+	return response.data.data
+}
 
-// export const updateBranch = async (
-// 	id: string,
-// 	data: CreateBranchDto
-// ): Promise<Branch> => {
-// 	const response = await api.put<Branch>(`/branches/${id}`, data)
-// 	return response.data
-// }
+// Обновить филиал
+export const updateBranch = async (
+	id: string,
+	data: UpdateBranchDto
+): Promise<Branch> => {
+	const response = await api.patch<{ data: Branch }>(`/branches/${id}`, data)
+	return response.data.data
+}
 
-// export const deleteBranch = async (id: string): Promise<void> => {
-// 	await api.delete(`/branches/${id}`)
-// }
+// Удалить филиал
+export const deleteBranch = async (id: string): Promise<void> => {
+	await api.delete(`/branches/${id}`)
+}
